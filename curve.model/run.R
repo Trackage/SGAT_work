@@ -114,8 +114,10 @@ fit <- estelle.metropolis(model,x.proposal,z.proposal,
 
 
 ## Tune proposals based on previous run
-x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
+
+x.proposal <- mvnorm(chain.cov(fit$x),s=0.3, tol = 1e-05)
 z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
+
 fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
                           iters=3000,thin=20)
