@@ -15,6 +15,7 @@ load("E:\\backup\\Elements\\Azimuth\\DATA\\mcmcGeo\\b362_99\\old\\metropolisMarc
 body(calib) <- parse(text = ".approxfun(x, y, v, method, yleft, yright, f)")
 
 d1 <- d[!is.na(d$segment), ]
+d1 <- d1[d1$depth < 20, ]
 d1 <- d1[!is.na(d1$light), ]
 d1$segment <- unclass(factor(d1$segment))
 
@@ -74,4 +75,48 @@ fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20)
 
 all(fixedx | is.sea(chain.last(fit$x)))
 all(is.sea(chain.last(fit$z)))
+
+x.proposal <- mvnorm(chain.cov(fit$x),s=0.3, tol = 1e-04)
+z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
+fit <- estelle.metropolis(model,x.proposal,z.proposal,
+                          x0=chain.last(fit$x),z0=chain.last(fit$z),
+                          iters=300,thin=20)
+
+x.proposal <- mvnorm(chain.cov(fit$x),s=0.3, tol = 1e-05)
+z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
+fit <- estelle.metropolis(model,x.proposal,z.proposal,
+                          x0=chain.last(fit$x),z0=chain.last(fit$z),
+                          iters=300,thin=20)
+
+
+
+
+x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
+z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
+fit <- estelle.metropolis(model,x.proposal,z.proposal,
+                          x0=chain.last(fit$x),z0=chain.last(fit$z),
+                          iters=300,thin=20)
+
+
+opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
+k <- sample(nrow(x0),20)
+matplot(t(fit$x[k,1,]),type="l",lty=1,col="dodgerblue",ylab="Lon")
+matplot(t(fit$x[k,2,]),type="l",lty=1,col="firebrick",ylab="Lat")
+par(opar)
+
+x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
+z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
+fit <- estelle.metropolis(model,x.proposal,z.proposal,
+                          x0=chain.last(fit$x),z0=chain.last(fit$z),
+                          iters=300,thin=20)
+
+
+
+
+## Tune proposals based on previous run
+x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
+z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
+fit <- estelle.metropolis(model,x.proposal,z.proposal,
+                          x0=chain.last(fit$x),z0=chain.last(fit$z),
+                          iters=3000,thin=20)
 
