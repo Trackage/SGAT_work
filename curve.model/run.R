@@ -1,11 +1,11 @@
 library(SGAT)
 
 if ( setInternet2(NA)) {
-    source("C:\\Users\\michae_sum\\Documents\\GitHub\\SGAT\\R\\Curve.R")
+    source("C:\\Users\\michae_sum\\Documents\\GitHub\\SGAT\\R\\SGAT.R")
     load("D:\\data\\TAGDATA\\mcmcGeo\\b362_99\\readyRun.Rdata")
     load("D:\\data\\TAGDATA\\mcmcGeo\\b362_99\\old\\metropolisMarch06\\x.Rdata")
 } else {
-    source("C:\\Users\\mdsumner\\Documents\\GitHub\\SGAT\\R\\Curve.R")
+    source("C:\\Users\\mdsumner\\Documents\\GitHub\\SGAT\\R\\SGAT.R")
     load("E:\\backup\\Elements\\Azimuth\\DATA\\mcmcGeo\\b362_99\\readyRun.Rdata")
 load("E:\\backup\\Elements\\Azimuth\\DATA\\mcmcGeo\\b362_99\\old\\metropolisMarch06\\x.Rdata")
 }
