@@ -13,6 +13,13 @@ load("E:\\backup\\Elements\\Azimuth\\DATA\\mcmcGeo\\b362_99\\old\\metropolisMarc
 
 ## don't ask
 body(calib) <- parse(text = ".approxfun(x, y, v, method, yleft, yright, f)")
+mkOldNew <- function(calibfun) {
+    calibfun
+    function(x) calibfun(90 - x)
+}
+
+newcalib <- mkOldNew(calib)
+
 
 d1 <- d[!is.na(d$segment), ]
 d1 <- d1[d1$depth < 20, ]
@@ -54,17 +61,34 @@ x0 <- x
 fixedx <- seq_len(nrow(x0)) %in% c(1, nrow(x0))
 
 z0 <-  (x0[-nrow(x0),1:2] + x0[-1,1:2])/2
-model <- curve.model(d1$gmt, d1$light, d1$segment, calib,
+model <- curve.model(d1$gmt, d1$light, d1$segment, newcalib,
 
                      alpha = c(7, 10), beta = c(150, 80),
                      logp.x = log.prior,
                      logp.z = log.prior,
-                     x0 = x0,z0 = z0,fixedx = fixedx)
+                   x0 = x0,z0 = z0,
+                     fixedx = fixedx)
 
-x.proposal <- mvnorm(S=diag(c(0.005,0.005, 0.005)),n=nrow(x0))
-z.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(x0)-1)
+## find starting points
+grid <- list(x = seq(lon.min, lon.max, length = 40),
+             y = seq(lat.min, lat.max, length = 30),
+             z = array(0, c(40, 30, nrow(x0))))
+for (i in seq_along(grid$x)) {
+        for (j in seq_along(grid$y)) {
+            grid$z[i,j,] <- model$logpx(cbind(rep(grid$x[i], nrow(x0)), grid$y[j], 0))
+        }
+    }
 
-fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20)
+x0 <- cbind(as.matrix(expand.grid(grid$x, grid$y)[apply(grid$z, 3, which.max), ]), 0)
+
+
+
+
+
+x.proposal <- mvnorm(S=diag(c(0.05,0.05, 0.5)),n=nrow(x0))
+z.proposal <- mvnorm(S=diag(c(0.05,0.05)),n=nrow(x0)-1)
+
+fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20, x0 = x0, z0 = (x0[-nrow(x0),1:2]+ x0[-1,1:2])/2)
 
 ## testthat
 ## fixedx[i/n] is really a logical vector of length n, no NAs (and friends)
@@ -76,7 +100,7 @@ fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20)
 all(fixedx | is.sea(chain.last(fit$x)))
 all(is.sea(chain.last(fit$z)))
 
-x.proposal <- mvnorm(chain.cov(fit$x),s=0.3, tol = 1e-04)
+x.proposal <- mvnorm(chain.cov(fit$x),s=0.3, tol = 1e-06)
 z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
 fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
