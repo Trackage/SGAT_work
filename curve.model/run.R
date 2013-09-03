@@ -55,7 +55,7 @@ fixedx <- seq_len(nrow(x0)) %in% c(1, nrow(x0))
 
 z0 <-  (x0[-nrow(x0),1:2] + x0[-1,1:2])/2
 model <- curve.model(d1$gmt, d1$light, d1$segment, calib,
-                     twilight.model = "LogNormal",
+              
                      alpha = c(7, 10), beta = c(150, 80),
                      logp.x = log.prior,
                      logp.z = log.prior,
