@@ -49,19 +49,19 @@ log.prior <- function(p)  {
 
 
 
-x0 <- x[,1:2]
+x0 <- x
 
 fixedx <- seq_len(nrow(x0)) %in% c(1, nrow(x0))
 
 z0 <-  (x0[-nrow(x0),1:2] + x0[-1,1:2])/2
 model <- curve.model(d1$gmt, d1$light, d1$segment, calib,
-              
+
                      alpha = c(7, 10), beta = c(150, 80),
                      logp.x = log.prior,
                      logp.z = log.prior,
                      x0 = x0,z0 = z0,fixedx = fixedx)
 
-x.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(x0))
+x.proposal <- mvnorm(S=diag(c(0.005,0.005, 0.005)),n=nrow(x0))
 z.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(x0)-1)
 
 fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=100,thin=20)
