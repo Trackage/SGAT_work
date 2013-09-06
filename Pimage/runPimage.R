@@ -2,10 +2,19 @@
 load("D:\\projects\\SGAT\\Movement_fit.Rdata")
 library(SGAT)
 
+## Pimage needs no input but the times
+pZ <- Pimage(fit$model$twilight)
+
+
+## can take a grid (anything that raster() accepts or a raster)
 prj <-  "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0"
 ##pZ <- Pimage(fit$model$twilight, grid = raster(extent(129, 142, -51, -27), 300, 150, crs = prj))
 pZ <- Pimage(fit$model$twilight, grid = raster(extent(110, 170, -70, -5), 300, 150, crs = prj))
-pZ <- chain.bin(fit$z, pZ)
+
+
+## 1) pimg is supplied
+
+pZ <- chain.bin(fit$z, pimg = pZ)
 
 
 ## x is a Pimage
