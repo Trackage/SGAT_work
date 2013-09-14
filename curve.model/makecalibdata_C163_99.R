@@ -25,10 +25,10 @@ ellie2calib <- data.frame(zenith = 90 - elev, light = calib(elev))
 ##with(elliecalib, lines(zenith, calib(zenith)))
 
 ## data
-d1 <- d[!is.na(d$segment), ]
-d1 <- d1[!is.na(d1$light), ]
-d1$segment <- unclass(factor(d1$segment))
-ellie2 <- d1[d1$depth < 15, c("gmt", "light", "segment")]
+##d1 <- d[!is.na(d$segment), ]
+##d1 <- d1[!is.na(d1$light), ]
+##d1$segment <- unclass(factor(d1$segment))
+ellie2 <- d1[d1$depth < 15, c("gmt", "light", "depth", "temp", "segment")]
 names(ellie2)[1] <- "time"
 rownames(ellie2) <- seq_len(nrow(ellie2))
 
