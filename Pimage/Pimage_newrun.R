@@ -1,7 +1,16 @@
 load("D:\\projects\\SGAT\\Movement_fit.Rdata")
+load("E:\\DATA\\SGAT_\\Movement_fit.Rdata")
+
 fit$model$time <- fit$model$twilight
 
 library(SGAT)
+
+
+## easy spec for a local projection
+x <- model.bin(fit, proj = "laea")
+
+## fuller spec, not very sensible
+x <- model.bin(fit, bin = "intermediate", proj = "+proj=utm +south +zone=50")
 
 ## default grids, different binning
 xprimary <- model.bin(fit)
