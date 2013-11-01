@@ -24,6 +24,8 @@ latlim <- c(-70, -50)
 
 
 land_dist.mask <- function(xlim, ylim, n=4) {
+    require(maptools)
+    require(rgeos)
     data(wrld_simpl)
     r <- raster(nrows = n * diff(ylim), ncols = n * diff(xlim),
               xmn = xlim[1L], xmx = xlim[2L],
@@ -63,24 +65,27 @@ log.prior <- function(x) {
 }
 
 
+d <- ElephantSeal2 ##subset(ElephantSeal2, segment %in% 1:80)
+d$segment <- unclass(factor(d$segment))
 
 ###################################################
 ### code chunk number 6: model
 ###################################################
-model <- curve.model(ElephantSeal2$time, ElephantSeal2$light, ElephantSeal2$segment, calibration,
+model <- curve.model(d$time, d$light, d$segment, calibration,
                      logp.x = log.prior,
                      logp.z = log.prior,
-                     alpha = c(7, 10), beta = c(8, 3.5)/10)
+                     alpha = c(7, 10), beta = c(8, 3.5))
 
 
 ###################################################
 ### code chunk number 7: init
 ###################################################
-## find starting points
+## find starting points, but search only further to the north
+## to avoid get stuck on the continent
 nx <- 30L
 ny <- 25L
 grid <- list(x = seq(lonlim[1L], lonlim[2L], length = nx),
-             y = seq(latlim[1L], latlim[2L], length = ny),
+             y = seq(latlim[1L] + 10, latlim[2L], length = ny),
              z = array(0, c(nx, ny, length(model$time))))
 for (i in seq_along(grid$x)) {
         for (j in seq_along(grid$y)) {
@@ -110,8 +115,10 @@ z.proposal <- mvnorm(S=diag(c(0.005,0.005)),n=nrow(x0)-1)
 ###################################################
 fit <- estelle.metropolis(model,x.proposal,z.proposal,iters=20,thin=20, x0 = x0, z0 = (x0[-nrow(x0),1:2]+ x0[-1,1:2])/2)
 
-plot(x0)
+
 ##segments(x0[,1], x0[,2], chain.last(fit$x)[,1], chain.last(fit$x)[,2])
+plot(chain.last(fit$x), type = "l")
+
 
 lastx <- chain.last(fit$x)
 while((!all(fixedx | log.prior(chain.last(fit$x)) == 0)) | !all(log.prior(chain.last(fit$z)) == 0)) {
@@ -125,27 +132,21 @@ lastx <- chain.last(fit$x)
 }
 
 
-
+plot(chain.last(fit$x), type = "l")
 x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
 z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
 fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
                           iters=300,thin=20)
-
-
+plot(chain.last(fit$x), type = "l")
+fit0 <- fit
 
 
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
 k <- sample(nrow(x0),20)
-matplot(t(cbind(fit0$x[k,1,], fit$x[k,1,])),type="l",lty=1,col="dodgerblue",ylab="Lon")
-matplot(t(cbind(fit0$x[k,1,], fit$x[k,1,])),type="l",lty=1,col="firebrick",ylab="Lat")
+matplot(t(cbind(fit$x[k,1,], fit$x[k,1,])),type="l",lty=1,col="dodgerblue",ylab="Lon")
+matplot(t(cbind(fit$x[k,2,], fit$x[k,2,])),type="l",lty=1,col="firebrick",ylab="Lat")
 par(opar)
-
-x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
-z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
-fit <- estelle.metropolis(model,x.proposal,z.proposal,
-                          x0=chain.last(fit$x),z0=chain.last(fit$z),
-                          iters=300,thin=20)
 
 ## Tune proposals based on previous run
 x.proposal <- mvnorm(chain.cov(fit$x,discard=100),s=0.3)
@@ -153,12 +154,14 @@ z.proposal <- mvnorm(chain.cov(fit$z,discard=100),s=0.3)
 fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
                           iters=300,thin=20)
+plot(chain.last(fit$x), type = "l")
 ## Tune proposals based on previous run
 x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
 z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
 fit <- estelle.metropolis(model,x.proposal,z.proposal,
                           x0=chain.last(fit$x),z0=chain.last(fit$z),
                           iters=300,thin=20)
+
 
 opar <- par(mfrow=c(2,1),mar=c(3,5,2,1)+0.1)
 matplot(scale(t(fit$x[150,,]),scale=F),type="l",lty=1,col=c(2,4),
@@ -167,6 +170,9 @@ matplot(scale(t(fit$z[150,,]),scale=F),type="l",lty=1,col=c(2,4),
         xlab="",ylab=expression(z[150]))
 par(opar)
 
+windows()
+plot(chain.last(fit$x))
+apply(fit$z, 3, points, pch = ".")
 ## Draw final sample
 x.proposal <- mvnorm(chain.cov(fit$x),s=0.3)
 z.proposal <- mvnorm(chain.cov(fit$z),s=0.3)
