@@ -14,54 +14,33 @@ library(raster)
 library(maptools)
 data(wrld_simpl)
 
-poly <- wrld_simpl
 
 lonlim <- c(110, 190)
 latlim <- c(-70, -50)
 
 
-
-
-
-land_dist.mask <- function(xlim, ylim, n=4) {
-    require(maptools)
-    require(rgeos)
-    data(wrld_simpl)
-    r <- raster(nrows = n * diff(ylim), ncols = n * diff(xlim),
+land.mask <- function(poly, xlim, ylim, n = 4L, land = TRUE) {
+  r <- raster(nrows = n * diff(ylim), ncols = n * diff(xlim),
               xmn = xlim[1L], xmx = xlim[2L],
               ymn= ylim[1L], ymx = ylim[2L],
-              crs = projection(wrld_simpl))
+              crs = projection(poly))
+  r <- rasterize(poly, r)
+  r <- as.matrix(is.na(r))[nrow(r):1L, ]
+  if(land) r <- !r
+  xbin <- seq(xlim[1L], xlim[2L], length=ncol(r) + 1L)
+  ybin <- seq(ylim[1L], ylim[2L], length=nrow(r) + 1L)
 
-    r <- rasterize(wrld_simpl, r, field = "FIPS")
-
-    ## clip as lines, so we don't get the sealed edges from the intersection
-    outline <- gIntersection(as(wrld_simpl, "SpatialLines"), as(extent(r), "SpatialPolygons"))
-    wxy <- coordinates(as(outline, "SpatialPoints"))
-
-    ## NA is ocean, the rest need distance values
-    ## prepare for distance to coast
-    rxy <- as.data.frame(r, xy = TRUE)
-
-    for (i in seq_len(nrow(rxy))[!is.na(rxy$layer)]) {
-         dsts <- spDistsN1(wxy, as.matrix(rxy[i,c("x", "y"), drop = FALSE]), longlat = TRUE)
-         rxy$layer[i] <- min(dsts)
-
-     }
-    r <- setValues(r, rxy$layer)
-    r <- as.matrix(r)[nrow(r):1, ]
-
-    xbin <- seq(xlim[1],xlim[2],length=ncol(r)+1)
-    ybin <- seq(ylim[1],ylim[2],length=nrow(r)+1)
-    function(p) {
-        r[cbind(.bincode(p[,2],ybin),.bincode(p[,1],xbin))]
-    }
+  function(p) {
+    r[cbind(.bincode(p[,2L], ybin),.bincode(p[,1L], xbin))]
+  }
 }
 
-dist.sea <- land_dist.mask(xlim=lonlim,ylim=latlim,n=4)
+is.sea <- land.mask(wrld_simpl, xlim = lonlim, ylim = latlim, land = FALSE)
 
-log.prior <- function(x) {
-    e <- dist.sea(x[,1:2])
-    ifelse(is.na(e), 0, -e)
+
+log.prior <- function(p)  {
+  f <- is.sea(p)
+  ifelse(f|is.na(f),0,-1000)
 }
 
 
@@ -183,39 +162,3 @@ fit <- estelle.metropolis(model,x.proposal,z.proposal,
 
 
 
-
-
-library(raadtools)
-d0 <- readsst(xylim = extent())
-p <- model.bin(fit, grid = d0)
-
-ps <- p
-mkxy <- function(x) expand.grid(x = x$x, y = x$y)
-for (i in seq_along(p)) {
-    cn <- cellFromXY(d0, mkxy(SGAT:::as.local.pimg(ps[[i]])))
-    ok <- ps[[i]]$image > 0
-    ps[[i]]$image[ok] <- extract(d0, cn)[ok]
-}
-
-
-
-##' Extract gridded data from a \code{\link{Pimage}}
-##'
-##' Read data via function in raadtools queried with a Pimage object.
-##' @title extract.pimg
-##' @param x a raadtools read function
-##' @param y a Pimage object, must match an object returned by x
-##' @param ... arguments passed to function x
-##' @return Pimage
-extract.pimg <- function(x, y, ...) {
-    times <- attr(y, "times")
-
-    ## assume daily
-    ct <- cut(times, "1 day")
-
-    for (i in seq_len(nlevels(ct)) {
-        thistime <- times[ct == levels(ct)[i]][1]
-        d <- x(thistime, ...)
-    }
-
-}
